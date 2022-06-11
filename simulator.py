@@ -106,6 +106,8 @@ def setStatsData(event, dataField, statGiven):
     else:
         dataField[statGiven]['statLabel'].config(foreground='green')
         dataField[statGiven]['value'] = userInputValue
+        dataField[statGiven]['statEntry'].delete(0, 'end')
+        dataField[statGiven]['statEntry'].insert(0, formatNum(userInputValue))
 
     # for stat, fieldData in dataField.items():
     #     print('{} - {}'.format(stat, fieldData))
