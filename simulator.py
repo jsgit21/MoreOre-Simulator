@@ -63,17 +63,18 @@ statNames = {
 }
 
 playerLife = 10000
+bossLife = 5000
 
 def click():
-    global playerLife
-    playerLife -= 100
-    playerHP.config(text=playerLife)
+    global bossLife
+    bossLife -= 100
+    bossHP.config(text=bossLife)
 
 
 window = Tk()
 
 winx = 735
-winy = 400
+winy = 420
 window.geometry('{}x{}'.format(winx, winy))
 
 playerStatFields = {
@@ -196,20 +197,20 @@ bossDropdown.pack()
 playerHP = 1000
 playerFrame = Frame()
 labelPlayer = Label(master=playerFrame, text='Player')
-playerHP = Label(master=playerFrame, text=playerLife)
+playerHP = Label(master=playerFrame, text=playerLife, font=('Ariel', 30, BOLD))
 labelPlayer.pack()
 playerHP.pack()
 
 bossFrame = Frame()
 labelBoss = Label(master=bossFrame, text='Boss')
-bossHP = Label(master=bossFrame, text='2000')
+bossHP = Label(master=bossFrame, text=bossLife, font=('Ariel', 30, BOLD))
 labelBoss.pack()
 bossHP.pack()
 
-playerFrame.grid(row=1,column=0,padx=20,pady=20)
-bossFrame.grid(row=1,column=1,padx=20,pady=20)
+playerFrame.grid(row=1,column=1,padx=20,pady=20)
+bossFrame.grid(row=1,column=2,padx=20,pady=20)
 
 myButton = Button(window, text='Click', command=click)
-myButton.grid(row=2, column=1)
+myButton.grid(row=2, column=2)
 
 window.mainloop()
