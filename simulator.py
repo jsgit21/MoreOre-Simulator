@@ -1,9 +1,14 @@
 import math
+import random
+from shutil import move
 from tkinter import *
+from tkinter.ttk import Progressbar
 from asyncio.windows_events import NULL
 from tkinter import font
 from tkinter.font import BOLD
-from dataSet import getBossInfo, allBossNames
+from tkinter.ttk import Style
+from turtle import width
+from bossData import *
 
 # Used for abbreviated number conversions, order is important
 # Adding more to the array will allow for more conversions
@@ -20,7 +25,6 @@ numAbbreviation = {
     'S':'Septillion',
     }
 numAbbreviationArray = list(numAbbreviation.keys())
-print(numAbbreviationArray)
 
 def convertAbbrevNum(num):
     if num == '':
@@ -62,31 +66,25 @@ statNames = {
     'AGI':'Agility',
 }
 
-playerLife = 10000
-bossLife = 5000
-
-def click():
-    global bossLife
-    bossLife -= 100
-    bossHP.config(text=bossLife)
-
-
 window = Tk()
 
 winx = 735
-winy = 420
+winy = 500
 window.geometry('{}x{}'.format(winx, winy))
 
 playerStatFields = {
-    'ATK':{'value':NULL, 'statLabel':NULL, 'statEntry':NULL, 'row':0, 'column':0},
-    'ARM':{'value':NULL, 'statLabel':NULL, 'statEntry':NULL, 'row':1, 'column':0},
-    'HP':{'value':NULL, 'statLabel':NULL, 'statEntry':NULL, 'row':2, 'column':0},
-    'SPD':{'value':NULL, 'statLabel':NULL, 'statEntry':NULL, 'row':3, 'column':0},
-    'AGI':{'value':NULL, 'statLabel':NULL, 'statEntry':NULL, 'row':0, 'column':1},
-    'DEX':{'value':NULL, 'statLabel':NULL, 'statEntry':NULL, 'row':1, 'column':1},
-    'LUK':{'value':NULL, 'statLabel':NULL, 'statEntry':NULL, 'row':2, 'column':1},
-    'STR':{'value':NULL, 'statLabel':NULL, 'statEntry':NULL, 'row':3, 'column':1},
+    'ATK':{'value':None, 'statLabel':NULL, 'statEntry':NULL, 'row':0, 'column':0},
+    'ARM':{'value':None, 'statLabel':NULL, 'statEntry':NULL, 'row':1, 'column':0},
+    'HP':{'value':None, 'statLabel':NULL, 'statEntry':NULL, 'HPLabel':NULL, 'row':2, 'column':0},
+    'SPD':{'value':None, 'statLabel':NULL, 'statEntry':NULL, 'row':3, 'column':0},
+    'AGI':{'value':None, 'statLabel':NULL, 'statEntry':NULL, 'row':0, 'column':1},
+    'DEX':{'value':None, 'statLabel':NULL, 'statEntry':NULL, 'row':1, 'column':1},
+    'LUK':{'value':None, 'statLabel':NULL, 'statEntry':NULL, 'row':2, 'column':1},
+    'STR':{'value':None, 'statLabel':NULL, 'statEntry':NULL, 'row':3, 'column':1},
 }
+
+def setMainHP(dataField, value):
+    dataField['HP']['HPLabel'].config(text=value)
 
 # Bound to statEntry Entries
 def setStatsData(event, dataField, statGiven):
@@ -96,6 +94,8 @@ def setStatsData(event, dataField, statGiven):
     if userInput == '':
         dataField[statGiven]['value'] = NULL
         dataField[statGiven]['statLabel'].config(foreground='black')
+        if statGiven == 'HP':
+            setMainHP(dataField, '--')
         return
 
     userInputValue = convertAbbrevNum(userInput)
@@ -103,11 +103,15 @@ def setStatsData(event, dataField, statGiven):
     if userInputValue == False:
         dataField[statGiven]['statLabel'].config(foreground='red')
         dataField[statGiven]['value'] = NULL
+        if statGiven == 'HP':
+            setMainHP(dataField, 'ERR')
     else:
         dataField[statGiven]['statLabel'].config(foreground='green')
         dataField[statGiven]['value'] = userInputValue
         dataField[statGiven]['statEntry'].delete(0, 'end')
         dataField[statGiven]['statEntry'].insert(0, formatNum(userInputValue))
+        if statGiven == 'HP':
+            setMainHP(dataField, formatNum(userInputValue))
 
     # for stat, fieldData in dataField.items():
     #     print('{} - {}'.format(stat, fieldData))
@@ -148,22 +152,30 @@ for stat, fieldData in playerStatFields.items():
 #------------------------------------------------------------------------------------ playerStats Frame END
 
 bossStatFields = {
-    'HP':{'value':NULL, 'statEntry':NULL, 'statLabel':NULL,  'row':0, 'column':0},
-    'ARM':{'value':NULL, 'statEntry':NULL, 'statLabel':NULL,  'row':1, 'column':0},
-    'LUK':{'value':NULL, 'statEntry':NULL, 'statLabel':NULL,  'row':2, 'column':0},
-    'ATK':{'value':NULL, 'statEntry':NULL, 'statLabel':NULL,  'row':0, 'column':1},
-    'DEX':{'value':NULL, 'statEntry':NULL, 'statLabel':NULL,  'row':1, 'column':1},
-    'APS':{'value':NULL, 'statEntry':NULL, 'statLabel':NULL,  'row':2, 'column':1},
+    'HP':{'value':None, 'statEntry':NULL, 'statLabel':NULL, 'HPLabel':NULL,  'row':0, 'column':0},
+    'ARM':{'value':None, 'statEntry':NULL, 'statLabel':NULL,  'row':1, 'column':0},
+    'LUK':{'value':None, 'statEntry':NULL, 'statLabel':NULL,  'row':2, 'column':0},
+    'ATK':{'value':None, 'statEntry':NULL, 'statLabel':NULL,  'row':0, 'column':1},
+    'DEX':{'value':None, 'statEntry':NULL, 'statLabel':NULL,  'row':1, 'column':1},
+    'APS':{'value':None, 'statEntry':NULL, 'statLabel':NULL,  'row':2, 'column':1},
 }
 
 def setBossData(boss):
+
     for stat, fieldData in bossStatFields.items():
-        bossData = getBossInfo(boss)
-        statShowValue = formatNum(bossData[stat])
-        fieldData['value'] = bossData[stat]
-        fieldData['statEntry'].delete(0, 'end')
-        fieldData['statEntry'].insert(0, statShowValue)
-        fieldData['statLabel'].config(foreground='green')
+        if boss != 'CUSTOM':
+            bossData = getBossInfo(boss)
+            statShowValue = formatNum(bossData[stat])
+            fieldData['value'] = bossData[stat]
+            fieldData['statEntry'].config(state=NORMAL)
+            fieldData['statEntry'].delete(0, 'end')
+            fieldData['statEntry'].insert(0, statShowValue)
+            fieldData['statLabel'].config(foreground='green')
+            fieldData['statEntry'].config(state=DISABLED)
+            if stat == 'HP':
+                fieldData['HPLabel'].config(text=statShowValue)
+        else:
+            fieldData['statEntry'].config(state=NORMAL)
     
 
 bossStats = Frame() #---------------------------------------------------------------- bossStats Frame START
@@ -196,23 +208,217 @@ bossDropdown.config(width=20)
 bossDropdown.pack()
 
 #-------------------------------------------------------------------------------------- bossStats Frame END
+
+PLAYER_LIFE = NULL
+BOSS_LIFE = NULL
+CLICK_DAMAGE = NULL
+playerCombatAfterID = None
+bossCombatAfterID = None
+
+def moveAttackButton():
+    rndx = random.randint(200,620)
+    rndy = random.randint(380,410)
+    manualAttack.place(x=rndx,y=rndy)
+
+
+def click():
+    global BOSS_LIFE
+    BOSS_LIFE -= CLICK_DAMAGE
+    bossHP.config(text= formatNum(int(BOSS_LIFE)))
+    bossProgressBar['value'] = BOSS_LIFE
+    moveAttackButton()
+
+def calcClickDamage(pATK, pSTR, pLUK):
+    global CLICK_DAMAGE
+
+    damage = pATK + ((pATK * pSTR) / 6)
+    clickMulti = 1 #artifacts change
+    critChance = min((pLUK / 4 / 100), 1)
+    critMulti = 1.5 #artifacts change
+
+    CLICK_DAMAGE = max((damage * clickMulti * critChance * critMulti), ((damage * clickMulti) + (damage * critChance * critMulti)))
+
+def battleEnded():
+    if PLAYER_LIFE == 0 or BOSS_LIFE == 0:
+        return True
+    else:
+        return False
+
+def dealPlayerDamage(pATK, pARM, pSPD, pAGI, pDEX, pLUK, pSTR, bLUK, bDEX, bARM):
+    if battleEnded():
+        return
+
+    global BOSS_LIFE
+    global playerCombatAfterID
+
+    damage = pATK + ((pATK * pSTR) / 6)
+    damage = damage - (bARM * 0.1)
+    pAPS = (1 + (1 * pAGI * 0.004))
+    hitChance = min(max((100 - (bLUK + 1)/(pDEX + 1))/100, 0.1),1)
+
+    rndHitChance = random.random()
+    if rndHitChance <= hitChance:
+        print('HIT random:',rndHitChance,'hitchance:',hitChance)
+        BOSS_LIFE -= damage
+
+        if BOSS_LIFE <= 0:
+            BOSS_LIFE = 0
+
+        bossHP.config(text=formatNum(int(BOSS_LIFE)))
+        bossProgressBar['value'] = BOSS_LIFE
+    else:
+        print('MISS random:',rndHitChance,'hitchance:',hitChance)
+
+    playerCombatAfterID = bossHP.after(int(1000/pAPS), dealPlayerDamage, pATK, pARM, pSPD, pAGI, pDEX, pLUK, pSTR, bLUK, bDEX, bARM)
+
+def dealBossDamage(bARM, bLUK, bATK, bDEX, bAPS, pLUK, pARM):
+    if battleEnded():
+        return
+
+    global bossCombatAfterID
+    global PLAYER_LIFE
+
+    # Boss hitChance is player's dodge chance
+    damage = bATK - (pARM * 0.1)
+    playerDodgeChance = min((pLUK + 1)/(bDEX + 1)/100, 0.9)
+
+    rndDodgeChance = random.random()
+    if rndDodgeChance > playerDodgeChance:
+        PLAYER_LIFE -= damage
+
+        if PLAYER_LIFE <= 0:
+            PLAYER_LIFE = 0
+
+        playerHP.config(text=formatNum(int(PLAYER_LIFE)))
+        playerProgressBar['value'] = PLAYER_LIFE
+    else:
+        print('PLAYER DODGED')
+    bossCombatAfterID = playerHP.after(int(1000/bAPS), dealBossDamage, bARM, bLUK, bATK, bDEX, bAPS, pLUK, pARM)
+
+def startCombat():
+    global PLAYER_LIFE 
+    global BOSS_LIFE
+
+    PLAYER_LIFE = playerStatFields['HP']['value']
+    playerProgressBar.config(maximum= PLAYER_LIFE)
+    playerProgressBar['value'] = PLAYER_LIFE
+    BOSS_LIFE = bossStatFields['HP']['value']
+    bossProgressBar.config(maximum= BOSS_LIFE)
+    bossProgressBar['value'] = BOSS_LIFE
+
+    pATK = playerStatFields['ATK']['value']
+    pARM = playerStatFields['ARM']['value']
+    pSPD = playerStatFields['SPD']['value']
+    pAGI = playerStatFields['AGI']['value']
+    pDEX = playerStatFields['DEX']['value']
+    pLUK = playerStatFields['LUK']['value']
+    pSTR = playerStatFields['STR']['value']
+    bARM = bossStatFields['ARM']['value']
+    bLUK = bossStatFields['LUK']['value']
+    bATK = bossStatFields['ATK']['value']
+    bDEX = bossStatFields['DEX']['value']
+    bAPS = bossStatFields['APS']['value']
+
+    combatButton.config(state=DISABLED)
+
+    calcClickDamage(pATK, pSTR, pLUK)
+
+    dealPlayerDamage(pATK, pARM, pSPD, pAGI, pDEX, pLUK, pSTR, bLUK, bDEX, bARM)
+    dealBossDamage(bARM, bLUK, bATK, bDEX, bAPS, pLUK, pARM)
+
+def setEntryStates(status):
+    currentBoss = selected.get()
+    if currentBoss == 'CUSTOM':
+        for stat, data in bossStatFields.items():
+            data['statEntry'].config(state=status)
+    for stat, data in playerStatFields.items():
+        data['statEntry'].config(state=status)
+
+def initiateCombat():
+    missingData = []
+    for stat, data in playerStatFields.items():
+        if data['value'] is None:
+            missingData.append('Player {}'.format(statNames[stat]))
+    for stat, data in bossStatFields.items():
+        if data['value'] is None:
+            missingData.append('Boss {}'.format(statNames[stat]))
+    
+    if len(missingData) > 0:
+        print(missingData)
+        return
+
+    setEntryStates(DISABLED)
+    startCombat()
+
+def stopCombat():
+    if bossCombatAfterID and playerCombatAfterID:
+        playerHP.after_cancel(bossCombatAfterID)
+        bossHP.after_cancel(playerCombatAfterID)
+        setEntryStates(NORMAL)
+        combatButton.config(state=NORMAL)
+
 playerHP = 1000
 playerFrame = Frame()
 labelPlayer = Label(master=playerFrame, text='Player')
-playerHP = Label(master=playerFrame, text=playerLife, font=('Ariel', 30, BOLD))
+playerHP = Label(master=playerFrame, text='--', font=('Ariel', 30, BOLD))
+playerStatFields['HP']['HPLabel'] = playerHP
+
+style = Style()
+style.theme_use('alt')
+style.configure("red.Horizontal.TProgressbar",
+            foreground='red', background='red')
+
+playerProgressBar = Progressbar(
+    master=playerFrame,
+    style="red.Horizontal.TProgressbar",
+    orient = HORIZONTAL,
+    length = 200,
+    mode = 'determinate',
+)
+playerProgressBar['value'] = 100
+playerProgressBar.pack()
+
 labelPlayer.pack()
 playerHP.pack()
 
 bossFrame = Frame()
 labelBoss = Label(master=bossFrame, text='Boss')
-bossHP = Label(master=bossFrame, text=bossLife, font=('Ariel', 30, BOLD))
+bossHP = Label(master=bossFrame, text='--', font=('Ariel', 30, BOLD))
+bossStatFields['HP']['HPLabel'] = bossHP
+
+style = Style()
+style.theme_use('alt')
+style.configure("purple.Horizontal.TProgressbar",
+            foreground='purple', background='purple')
+
+bossProgressBar = Progressbar(
+    master=bossFrame,
+    style="purple.Horizontal.TProgressbar",
+    orient = HORIZONTAL,
+    length = 200,
+    maximum = 100,
+    mode = 'determinate'
+)
+bossProgressBar['value'] = 100
+bossProgressBar.pack()
+
 labelBoss.pack()
 bossHP.pack()
 
 playerFrame.grid(row=1,column=1,padx=20,pady=20)
 bossFrame.grid(row=1,column=2,padx=20,pady=20)
 
-myButton = Button(window, text='Click', command=click)
-myButton.grid(row=2, column=2)
+sword = PhotoImage(file = ".\\Media\\Resources\\combatSword.png")
+manualAttack = Button(window, image=sword, command=click, relief=FLAT)
+manualAttack.place(x = random.randint(200,620), y = random.randint(380,410))
+
+
+btnFrame = Frame()
+combatButton = Button(btnFrame, text='Start Combat', command=initiateCombat)
+combatButton.grid(row=0, column=0)
+
+stopCombatButton = Button(btnFrame, text='Stop Combat', command=stopCombat)
+stopCombatButton.grid(row=1, column=0, pady=10)
+btnFrame.grid(row=1, column=0)
 
 window.mainloop()
