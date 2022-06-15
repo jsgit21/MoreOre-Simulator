@@ -1,3 +1,4 @@
+import time
 import math
 import random
 from tkinter import *
@@ -235,7 +236,11 @@ def calcClickDamage(pATK, pSTR, pLUK):
     damage = pATK + ((pATK * pSTR) / 6)
     clickMulti = 1 #artifacts change
     critChance = min((pLUK / 4 / 100), 1)
-    critMulti = 1.5 #artifacts change
+    critMulti = 1.5 
+    for i, button in critButtons.items():
+        if button['clicked']:
+            critMulti += button['value']
+    print('CritMulti:',critMulti)
 
     CLICK_DAMAGE = max(
         (damage * clickMulti * critChance * critMulti), 
@@ -257,7 +262,7 @@ def dealPlayerDamage(pAPS, damage, hitChance):
 
     rndHitChance = random.random()
     if rndHitChance <= hitChance:
-        print('HIT random:',rndHitChance,'hitchance:',hitChance)
+        #print('HIT random:',rndHitChance,'hitchance:',hitChance)
         BOSS_LIFE -= damage
 
         if BOSS_LIFE <= 0:
@@ -302,12 +307,13 @@ def startCombat():
     global BOSS_LIFE
 
     PLAYER_LIFE = playerValue('HP')
-    playerProgressBar.config(maximum= PLAYER_LIFE)
-    playerProgressBar['value'] = PLAYER_LIFE
+    playerProgressBar.config(maximum= PLAYER_LIFE, value=PLAYER_LIFE)
 
     BOSS_LIFE = bossValue('HP')
-    bossProgressBar.config(maximum= BOSS_LIFE)
-    bossProgressBar['value'] = BOSS_LIFE
+    bossProgressBar.config(maximum= BOSS_LIFE, value=BOSS_LIFE)
+
+    print('player life',PLAYER_LIFE)
+    print('boss life',BOSS_LIFE)
 
     pATK = playerValue('ATK')
     pLUK = playerValue('LUK')
@@ -318,12 +324,13 @@ def startCombat():
     pDMG = pATK + ((pATK * pSTR) / 6) # Raw Player damage
     pDMG -= (bossValue('ARM') * 0.1) # Player damage against boss armor
     pHIT = min(max((100 - (bossValue('LUK') + 1)/(playerValue('DEX') + 1))/100, 0.1),1) # Player hit chance
-    dealPlayerDamage(pAPS, pDMG, pHIT)
 
     bAPS = bossValue('APS') # Boss Attacks per second
     bDMG = bossValue('ATK') - (playerValue('ARM') * 0.1) # Boss damage
     pDDG = min((pLUK + 1)/(bossValue('DEX') + 1)/100, 0.9) # Player dodge chance
     #print('Boss DPS: ', bDMG * (1-pDDG) * bAPS)
+
+    dealPlayerDamage(pAPS, pDMG, pHIT)
     dealBossDamage(bAPS, bDMG, pDDG)
 
     combatButton.config(state=DISABLED, bg=colors.btnGrey)
@@ -424,5 +431,30 @@ combatButton.grid(row=0, column=0)
 stopCombatButton = Button(btnFrame, text='Stop Combat', command=stopCombat, state=DISABLED, bg=colors.btnGrey, activebackground=colors.btnActiveRed)
 stopCombatButton.grid(row=1, column=0, pady=10)
 btnFrame.grid(row=1, column=0)
+
+buffsFrame = Frame()
+buffsFrame.grid(row=3, column=0)
+
+
+def toggle(x):
+    button = critButtons[x]
+    if button['clicked']:
+        button['btn'].config(bg=colors.btnGrey, activebackground=colors.btnGrey)
+        button['clicked'] = False
+    else:
+        button['btn'].config(bg=colors.btnActiveGreen, activebackground=colors.btnActiveGreen)
+        button['clicked'] = True
+
+# Started adding buttons, still need to handle crit multiplier dmg
+critButtons = {}
+for i in range(0,3):
+    critButtons[i] = {'img':None, 'btn': None, 'clicked':False, 'value':0.5}
+    if i == 2:
+        critButtons[i]['value'] = 1
+    critButtons[i]['img'] = PhotoImage(file = ".\\Media\\Resources\\crit{}.png".format(i+1))
+    critBtn = Button(buffsFrame, image=critButtons[i]['img'], command=lambda x=i: toggle(x), relief=FLAT)
+    critBtn.grid(row=0, column=i)
+    critButtons[i]['btn'] = critBtn
+print(critButtons)
 
 window.mainloop()
