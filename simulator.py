@@ -244,17 +244,12 @@ def battleEnded():
     else:
         return False
 
-def dealPlayerDamage(pATK, pARM, pSPD, pAGI, pDEX, pLUK, pSTR, bLUK, bDEX, bARM):
+def dealPlayerDamage(pAPS, damage, hitChance):
     if battleEnded():
         return
 
     global BOSS_LIFE
     global playerCombatAfterID
-
-    damage = pATK + ((pATK * pSTR) / 6)
-    damage = damage - (bARM * 0.1)
-    pAPS = (1 + (1 * pAGI * 0.004))
-    hitChance = min(max((100 - (bLUK + 1)/(pDEX + 1))/100, 0.1),1)
 
     rndHitChance = random.random()
     if rndHitChance <= hitChance:
@@ -269,9 +264,9 @@ def dealPlayerDamage(pATK, pARM, pSPD, pAGI, pDEX, pLUK, pSTR, bLUK, bDEX, bARM)
     else:
         print('MISS random:',rndHitChance,'hitchance:',hitChance)
 
-    playerCombatAfterID = bossHP.after(int(1000/pAPS), dealPlayerDamage, pATK, pARM, pSPD, pAGI, pDEX, pLUK, pSTR, bLUK, bDEX, bARM)
+    playerCombatAfterID = bossHP.after(int(1000/pAPS), dealPlayerDamage, pAPS, damage, hitChance)
 
-def dealBossDamage(bARM, bLUK, bATK, bDEX, bAPS, pLUK, pARM):
+def dealBossDamage(bAPS, damage, playerDodgeChance):
     if battleEnded():
         return
 
@@ -279,9 +274,6 @@ def dealBossDamage(bARM, bLUK, bATK, bDEX, bAPS, pLUK, pARM):
     global PLAYER_LIFE
 
     # Boss hitChance is player's dodge chance
-    damage = bATK - (pARM * 0.1)
-    playerDodgeChance = min((pLUK + 1)/(bDEX + 1)/100, 0.9)
-
     rndDodgeChance = random.random()
     if rndDodgeChance > playerDodgeChance:
         PLAYER_LIFE -= damage
@@ -293,38 +285,44 @@ def dealBossDamage(bARM, bLUK, bATK, bDEX, bAPS, pLUK, pARM):
         playerProgressBar['value'] = PLAYER_LIFE
     else:
         print('PLAYER DODGED')
-    bossCombatAfterID = playerHP.after(int(1000/bAPS), dealBossDamage, bARM, bLUK, bATK, bDEX, bAPS, pLUK, pARM)
+    bossCombatAfterID = playerHP.after(int(1000/bAPS), dealBossDamage, bAPS, damage, playerDodgeChance)
+
+def playerValue(stat):
+    return playerStatFields[stat]['value']
+
+def bossValue(stat):
+    return bossStatFields[stat]['value']
 
 def startCombat():
     global PLAYER_LIFE 
     global BOSS_LIFE
 
-    PLAYER_LIFE = playerStatFields['HP']['value']
+    PLAYER_LIFE = playerValue('HP')
     playerProgressBar.config(maximum= PLAYER_LIFE)
     playerProgressBar['value'] = PLAYER_LIFE
-    BOSS_LIFE = bossStatFields['HP']['value']
+
+    BOSS_LIFE = bossValue('HP')
     bossProgressBar.config(maximum= BOSS_LIFE)
     bossProgressBar['value'] = BOSS_LIFE
 
-    pATK = playerStatFields['ATK']['value']
-    pARM = playerStatFields['ARM']['value']
-    pSPD = playerStatFields['SPD']['value']
-    pAGI = playerStatFields['AGI']['value']
-    pDEX = playerStatFields['DEX']['value']
-    pLUK = playerStatFields['LUK']['value']
-    pSTR = playerStatFields['STR']['value']
-    bARM = bossStatFields['ARM']['value']
-    bLUK = bossStatFields['LUK']['value']
-    bATK = bossStatFields['ATK']['value']
-    bDEX = bossStatFields['DEX']['value']
-    bAPS = bossStatFields['APS']['value']
+    pATK = playerValue('ATK')
+    pLUK = playerValue('LUK')
+    pSTR = playerValue('STR')
+    calcClickDamage(pATK, pSTR, pLUK) # damage for manual click
+
+    pAPS = (1 + (1 * playerValue('AGI') * 0.004)) # Player Attacks per second
+    pDMG = pATK + ((pATK * pSTR) / 6) # Raw Player damage
+    pDMG -= (bossValue('ARM') * 0.1) # Player damage against boss armor
+    pHIT = min(max((100 - (bossValue('LUK') + 1)/(playerValue('DEX') + 1))/100, 0.1),1) # Player hit chance
+    dealPlayerDamage(pAPS, pDMG, pHIT)
+
+    bAPS = bossValue('APS') # Boss Attacks per second
+    bDMG = bossValue('ATK') - (playerValue('ARM') * 0.1) # Boss damage
+    pDDG = min((pLUK + 1)/(bossValue('DEX') + 1)/100, 0.9) # Player dodge chance
+    #print('Boss DPS: ', bDMG * (1-pDDG) * bAPS)
+    dealBossDamage(bAPS, bDMG, pDDG)
 
     combatButton.config(state=DISABLED)
-
-    calcClickDamage(pATK, pSTR, pLUK)
-
-    dealPlayerDamage(pATK, pARM, pSPD, pAGI, pDEX, pLUK, pSTR, bLUK, bDEX, bARM)
-    dealBossDamage(bARM, bLUK, bATK, bDEX, bAPS, pLUK, pARM)
 
 def setEntryStates(status):
     currentBoss = selected.get()
