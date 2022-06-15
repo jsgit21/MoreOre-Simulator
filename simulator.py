@@ -1,14 +1,14 @@
 import math
 import random
-from shutil import move
 from tkinter import *
 from tkinter.ttk import Progressbar
 from asyncio.windows_events import NULL
 from tkinter import font
 from tkinter.font import BOLD
 from tkinter.ttk import Style
-from turtle import width
+
 from bossData import *
+import colors
 
 # Used for abbreviated number conversions, order is important
 # Adding more to the array will allow for more conversions
@@ -71,6 +71,7 @@ window = Tk()
 winx = 735
 winy = 500
 window.geometry('{}x{}'.format(winx, winy))
+window.title('More Ore Combat Simulator')
 
 playerStatFields = {
     'ATK':{'value':None, 'statLabel':NULL, 'statEntry':NULL, 'row':0, 'column':0},
@@ -236,7 +237,10 @@ def calcClickDamage(pATK, pSTR, pLUK):
     critChance = min((pLUK / 4 / 100), 1)
     critMulti = 1.5 #artifacts change
 
-    CLICK_DAMAGE = max((damage * clickMulti * critChance * critMulti), ((damage * clickMulti) + (damage * critChance * critMulti)))
+    CLICK_DAMAGE = max(
+        (damage * clickMulti * critChance * critMulti), 
+        ((damage * clickMulti) + (damage * critChance * critMulti))
+    )
 
 def battleEnded():
     if PLAYER_LIFE == 0 or BOSS_LIFE == 0:
@@ -322,7 +326,8 @@ def startCombat():
     #print('Boss DPS: ', bDMG * (1-pDDG) * bAPS)
     dealBossDamage(bAPS, bDMG, pDDG)
 
-    combatButton.config(state=DISABLED)
+    combatButton.config(state=DISABLED, bg=colors.btnGrey)
+    stopCombatButton.config(state=NORMAL, bg=colors.btnRed)
 
 def setEntryStates(status):
     currentBoss = selected.get()
@@ -353,7 +358,8 @@ def stopCombat():
         playerHP.after_cancel(bossCombatAfterID)
         bossHP.after_cancel(playerCombatAfterID)
         setEntryStates(NORMAL)
-        combatButton.config(state=NORMAL)
+        combatButton.config(state=NORMAL, bg=colors.btnGreen)
+        stopCombatButton.config(state=DISABLED, bg=colors.btnGrey)
 
 playerHP = 1000
 playerFrame = Frame()
@@ -370,7 +376,7 @@ playerProgressBar = Progressbar(
     master=playerFrame,
     style="red.Horizontal.TProgressbar",
     orient = HORIZONTAL,
-    length = 200,
+    length = 260,
     mode = 'determinate',
 )
 playerProgressBar['value'] = 100
@@ -386,14 +392,14 @@ bossStatFields['HP']['HPLabel'] = bossHP
 
 style = Style()
 style.theme_use('alt')
-style.configure("purple.Horizontal.TProgressbar",
-            foreground='purple', background='purple')
+style.configure("red.Horizontal.TProgressbar",
+            foreground='red', background='red')
 
 bossProgressBar = Progressbar(
     master=bossFrame,
-    style="purple.Horizontal.TProgressbar",
+    style="red.Horizontal.TProgressbar",
     orient = HORIZONTAL,
-    length = 200,
+    length = 260,
     maximum = 100,
     mode = 'determinate'
 )
@@ -412,10 +418,10 @@ manualAttack.place(x = random.randint(200,620), y = random.randint(380,410))
 
 
 btnFrame = Frame()
-combatButton = Button(btnFrame, text='Start Combat', command=initiateCombat)
+combatButton = Button(btnFrame, text='Start Combat', command=initiateCombat, bg=colors.btnGreen, activebackground=colors.btnActiveGreen)
 combatButton.grid(row=0, column=0)
 
-stopCombatButton = Button(btnFrame, text='Stop Combat', command=stopCombat)
+stopCombatButton = Button(btnFrame, text='Stop Combat', command=stopCombat, state=DISABLED, bg=colors.btnGrey, activebackground=colors.btnActiveRed)
 stopCombatButton.grid(row=1, column=0, pady=10)
 btnFrame.grid(row=1, column=0)
 
