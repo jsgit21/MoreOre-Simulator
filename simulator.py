@@ -70,7 +70,7 @@ statNames = {
 window = Tk()
 
 winx = 735
-winy = 500
+winy = 520
 window.geometry('{}x{}'.format(winx, winy))
 window.title('More Ore Combat Simulator')
 
@@ -419,6 +419,8 @@ bossHP.pack()
 playerFrame.grid(row=1,column=1,padx=20,pady=20)
 bossFrame.grid(row=1,column=2,padx=20,pady=20)
 
+manualAttackFrame = Frame(height=60) # used for padding space for manual attack sword
+manualAttackFrame.grid(row=3, column=0)
 sword = PhotoImage(file = ".\\Media\\Resources\\combatSword.png")
 manualAttack = Button(window, image=sword, command=click, relief=FLAT)
 manualAttack.place(x = random.randint(200,620), y = random.randint(380,410))
@@ -433,7 +435,7 @@ stopCombatButton.grid(row=1, column=0, pady=10)
 btnFrame.grid(row=1, column=0)
 
 buffsFrame = Frame()
-buffsFrame.grid(row=3, column=0)
+buffsFrame.grid(row=4, column=0, columnspan=2, sticky=W, padx=12)
 
 
 def toggle(x):
@@ -452,8 +454,8 @@ for i in range(0,3):
     if i == 2:
         critButtons[i]['value'] = 1
     critButtons[i]['img'] = PhotoImage(file = ".\\Media\\Resources\\crit{}.png".format(i+1))
-    critBtn = Button(buffsFrame, image=critButtons[i]['img'], command=lambda x=i: toggle(x), relief=FLAT)
-    critBtn.grid(row=0, column=i)
+    critBtn = Button(buffsFrame, image=critButtons[i]['img'], command=lambda x=i: toggle(x), relief=FLAT, bg=colors.btnGrey)
+    critBtn.grid(row=0, column=i, padx=4)
     critButtons[i]['btn'] = critBtn
 print(critButtons)
 
