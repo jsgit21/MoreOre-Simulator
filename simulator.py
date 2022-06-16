@@ -447,8 +447,7 @@ def toggle(x):
         button['btn'].config(bg=colors.btnActiveGreen, activebackground=colors.btnActiveGreen)
         button['clicked'] = True
 
-# Started adding buttons, still need to handle crit multiplier dmg
-critButtons = {}
+critButtons = {} # 0:{'img': <img>, 'btn': <btn-object>, 'clicked': <bool>, 'value': <int>}
 for i in range(0,3):
     critButtons[i] = {'img':None, 'btn': None, 'clicked':False, 'value':0.5}
     if i == 2:
@@ -457,6 +456,5 @@ for i in range(0,3):
     critBtn = Button(buffsFrame, image=critButtons[i]['img'], command=lambda x=i: toggle(x), relief=FLAT, bg=colors.btnGrey)
     critBtn.grid(row=0, column=i, padx=4)
     critButtons[i]['btn'] = critBtn
-print(critButtons)
 
 window.mainloop()
