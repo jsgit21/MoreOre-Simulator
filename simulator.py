@@ -70,7 +70,7 @@ statNames = {
 window = Tk()
 
 winx = 735
-winy = 600
+winy = 620
 window.geometry('{}x{}'.format(winx, winy))
 window.title('More Ore Combat Simulator')
 
@@ -250,17 +250,15 @@ def getClickMulti():
     clickMulti += getRavMulti()
     return clickMulti
 
-def calcClickDamage(pATK, pSTR, pLUK):
+def calcClickDamage(pDMG, pLUK):
     global CLICK_DAMAGE
-
-    damage = pATK + ((pATK * pSTR) / 6)
     critChance = min((pLUK / 4 / 100), 1)
     clickMulti = getClickMulti()
     critMulti = getCritMulti()
 
     CLICK_DAMAGE = max(
-        (damage * clickMulti * critChance * critMulti), 
-        ((damage * clickMulti) + (damage * critChance * critMulti))
+        (pDMG * clickMulti * critChance * critMulti), 
+        ((pDMG * clickMulti) + (pDMG * critChance * critMulti))
     )
 
 def battleEnded():
@@ -275,7 +273,6 @@ def dealPlayerDamage(pAPS, damage, hitChance):
 
     global BOSS_LIFE
     global playerCombatAfterID
-    print('Player Damage:',damage)
 
     rndHitChance = random.random()
     if rndHitChance <= hitChance:
@@ -287,8 +284,6 @@ def dealPlayerDamage(pAPS, damage, hitChance):
 
         bossHP.config(text=formatNum(int(BOSS_LIFE)))
         bossProgressBar['value'] = BOSS_LIFE
-    else:
-        print('MISS random:',rndHitChance,'hitchance:',hitChance)
 
     playerCombatAfterID = bossHP.after(int(1000/pAPS), dealPlayerDamage, pAPS, damage, hitChance)
 
@@ -309,8 +304,7 @@ def dealBossDamage(bAPS, damage, playerDodgeChance):
 
         playerHP.config(text=formatNum(int(PLAYER_LIFE)))
         playerProgressBar['value'] = PLAYER_LIFE
-    else:
-        print('PLAYER DODGED')
+
     bossCombatAfterID = playerHP.after(int(1000/bAPS), dealBossDamage, bAPS, damage, playerDodgeChance)
 
 def playerValue(stat):
@@ -320,6 +314,7 @@ def bossValue(stat):
     return bossStatFields[stat]['value']
 
 def startCombat():
+
     global PLAYER_LIFE 
     global BOSS_LIFE
 
@@ -332,17 +327,18 @@ def startCombat():
     pATK = playerValue('ATK')
     pLUK = playerValue('LUK')
     pSTR = playerValue('STR')
-    calcClickDamage(pATK, pSTR, pLUK) # damage for manual click
 
     pAPS = (1 + (1 * playerValue('AGI') * 0.004)) # Player Attacks per second
     pDMG = pATK + ((pATK * pSTR) / 6) # Raw Player damage
     pDMG -= (bossValue('ARM') * 0.1) # Player damage against boss armor
-    pDMG = max(pDMG, 0) # Prevents Player damage from being negative if caused to be negative due to boss armor
+    pDMG = max(pDMG, 1) # Prevents Player damage from being negative if caused to be negative due to boss armor
     pHIT = min(max((100 - (bossValue('LUK') + 1)/(playerValue('DEX') + 1))/100, 0.1),1) # Player hit chance
+
+    calcClickDamage(pDMG, pLUK) # damage for manual click
 
     bAPS = bossValue('APS') # Boss Attacks per second
     bDMG = bossValue('ATK') - (playerValue('ARM') * 0.1) # Boss damage
-    bDMG = max(bDMG, 0) # Prevents Boss damage from being negative if caused to be negative due to player armor
+    bDMG = max(bDMG, 1) # Prevents Boss damage from being negative if caused to be negative due to player armor
     pDDG = min((pLUK + 1)/(bossValue('DEX') + 1)/100, 0.9) # Player dodge chance
     #print('Boss DPS: ', bDMG * (1-pDDG) * bAPS)
 
@@ -374,6 +370,7 @@ def initiateCombat():
         return
 
     manualAttack.place(x = random.randint(200,620), y = random.randint(380,410))
+
     setEntryStates(DISABLED)
     startCombat()
 
@@ -386,7 +383,6 @@ def stopCombat():
         stopCombatButton.config(state=DISABLED, bg=colors.btnGrey)
         manualAttack.place_forget()
 
-playerHP = 1000
 playerFrame = Frame()
 labelPlayer = Label(master=playerFrame, text='Player')
 playerHP = Label(master=playerFrame, text='--', font=('Ariel', 30, BOLD))
@@ -456,7 +452,7 @@ researchFrame.grid(row=4, column=0, columnspan=2, sticky=W, padx=12)
 buffsFrame = Frame(master=researchFrame)
 buffsFrame.grid(row=1, column=0, sticky=W)
 researchTitle = Label(master=researchFrame, text='RESEARCH', font=('Arial',10))
-researchTitle.grid(row=0, sticky=W)
+researchTitle.grid(row=0, sticky=W, pady=4)
 
 def toggle(x, btnDict, label, type):
     button = btnDict[x]
