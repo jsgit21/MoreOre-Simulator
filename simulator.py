@@ -230,17 +230,33 @@ def click():
     bossProgressBar['value'] = BOSS_LIFE
     moveAttackButton()
 
+def getCritMulti():
+    critMulti = 1.5
+    for i, button in critButtons.items():
+        if button['clicked']:
+            critMulti += button['value']
+    return critMulti
+
+def getRavMulti():
+    # returns multiplier for ravenous strikes buff
+    values = [0]
+    for i, button in ravButtons.items():
+        if button['clicked']:
+            values.append(button['value'])
+    return max(values)
+
+def getClickMulti():
+    clickMulti = 1
+    clickMulti += getRavMulti()
+    return clickMulti
+
 def calcClickDamage(pATK, pSTR, pLUK):
     global CLICK_DAMAGE
 
     damage = pATK + ((pATK * pSTR) / 6)
-    clickMulti = 1 #artifacts change
     critChance = min((pLUK / 4 / 100), 1)
-    critMulti = 1.5 
-    for i, button in critButtons.items():
-        if button['clicked']:
-            critMulti += button['value']
-    print('CritMulti:',critMulti)
+    clickMulti = getClickMulti()
+    critMulti = getCritMulti()
 
     CLICK_DAMAGE = max(
         (damage * clickMulti * critChance * critMulti), 
@@ -308,13 +324,10 @@ def startCombat():
     global BOSS_LIFE
 
     PLAYER_LIFE = playerValue('HP')
-    playerProgressBar.config(maximum= PLAYER_LIFE, value=PLAYER_LIFE)
+    playerProgressBar.config(maximum=PLAYER_LIFE, value=PLAYER_LIFE)
 
     BOSS_LIFE = bossValue('HP')
-    bossProgressBar.config(maximum= BOSS_LIFE, value=BOSS_LIFE)
-
-    print('player life',PLAYER_LIFE)
-    print('boss life',BOSS_LIFE)
+    bossProgressBar.config(maximum=BOSS_LIFE, value=BOSS_LIFE)
 
     pATK = playerValue('ATK')
     pLUK = playerValue('LUK')
@@ -443,9 +456,9 @@ researchFrame.grid(row=4, column=0, columnspan=2, sticky=W, padx=12)
 buffsFrame = Frame(master=researchFrame)
 buffsFrame.grid(row=1, column=0, sticky=W)
 researchTitle = Label(master=researchFrame, text='RESEARCH', font=('Arial',10))
-researchTitle.grid(row=0)
+researchTitle.grid(row=0, sticky=W)
 
-def toggle(x, btnDict):
+def toggle(x, btnDict, label, type):
     button = btnDict[x]
     if button['clicked']:
         button['btn'].config(bg=colors.btnGrey, activebackground=colors.btnGrey)
@@ -454,23 +467,38 @@ def toggle(x, btnDict):
         button['btn'].config(bg=colors.btnActiveGreen, activebackground=colors.btnActiveGreen)
         button['clicked'] = True
 
+    if type == 'crit':
+        label.config(text='Crit Multiplier: {}'.format(getCritMulti()))
+    else:
+        label.config(text='Ravenous DMG: {}%'.format(getRavMulti() * 100))
+
+    
+
 critButtons = {} # 0:{'img': <img>, 'btn': <btn-object>, 'clicked': <bool>, 'value': <int>}
+critMultiLabel = Label(buffsFrame, text='Crit Multiplier: 1.5')
 for i in range(0,3):
     critButtons[i] = {'img':None, 'btn': None, 'clicked':False, 'value':0.5}
     if i == 2:
         # Crit 1: 0.5, Crit 2: 0.5, Crit 3: 1
         critButtons[i]['value'] = 1
     critButtons[i]['img'] = PhotoImage(file = ".\\Media\\Resources\\crit{}.png".format(i+1))
-    critBtn = Button(buffsFrame, image=critButtons[i]['img'], command=lambda x=i, btnDict=critButtons: toggle(x, btnDict), relief=FLAT, bg=colors.btnGrey)
+    critBtn = Button(buffsFrame, image=critButtons[i]['img'], 
+        command=lambda x=i, btnDict=critButtons, label=critMultiLabel, type='crit': toggle(x, btnDict, label, type),  
+        relief=FLAT, bg=colors.btnGrey)
     critBtn.grid(row=0, column=i, padx=4, pady=2)
     critButtons[i]['btn'] = critBtn
+critMultiLabel.grid(row=0, column=4, padx=4, sticky=W)
 
 ravButtons = {}
+ravDamageLabel = Label(buffsFrame, text='Ravenous DMG: 0%')
 for i in range(0,3):
     ravButtons[i] = {'img': None, 'btn': None, 'clicked': False, 'value': i+1}
     ravButtons[i]['img'] = PhotoImage(file = ".\\Media\\Resources\\rav{}.png".format(i+1))
-    ravBtn = Button(buffsFrame, image = ravButtons[i]['img'], command=lambda x=i, btnDict=ravButtons: toggle(x, btnDict), relief=FLAT, bg=colors.btnGrey)
+    ravBtn = Button(buffsFrame, image = ravButtons[i]['img'], 
+        command=lambda x=i, btnDict=ravButtons, label=ravDamageLabel, type='rav': toggle(x, btnDict, label, type), 
+        relief=FLAT, bg=colors.btnGrey)
     ravBtn.grid(row=1, column=i, padx=4, pady=2)
     ravButtons[i]['btn'] = ravBtn
+ravDamageLabel.grid(row=1, column=4, padx=4, sticky=W)
 
 window.mainloop()
