@@ -70,7 +70,7 @@ statNames = {
 window = Tk()
 
 winx = 735
-winy = 520
+winy = 600
 window.geometry('{}x{}'.format(winx, winy))
 window.title('More Ore Combat Simulator')
 
@@ -259,6 +259,7 @@ def dealPlayerDamage(pAPS, damage, hitChance):
 
     global BOSS_LIFE
     global playerCombatAfterID
+    print('Player Damage:',damage)
 
     rndHitChance = random.random()
     if rndHitChance <= hitChance:
@@ -323,10 +324,12 @@ def startCombat():
     pAPS = (1 + (1 * playerValue('AGI') * 0.004)) # Player Attacks per second
     pDMG = pATK + ((pATK * pSTR) / 6) # Raw Player damage
     pDMG -= (bossValue('ARM') * 0.1) # Player damage against boss armor
+    pDMG = max(pDMG, 0) # Prevents Player damage from being negative if caused to be negative due to boss armor
     pHIT = min(max((100 - (bossValue('LUK') + 1)/(playerValue('DEX') + 1))/100, 0.1),1) # Player hit chance
 
     bAPS = bossValue('APS') # Boss Attacks per second
     bDMG = bossValue('ATK') - (playerValue('ARM') * 0.1) # Boss damage
+    bDMG = max(bDMG, 0) # Prevents Boss damage from being negative if caused to be negative due to player armor
     pDDG = min((pLUK + 1)/(bossValue('DEX') + 1)/100, 0.9) # Player dodge chance
     #print('Boss DPS: ', bDMG * (1-pDDG) * bAPS)
 
@@ -357,6 +360,7 @@ def initiateCombat():
         print(missingData)
         return
 
+    manualAttack.place(x = random.randint(200,620), y = random.randint(380,410))
     setEntryStates(DISABLED)
     startCombat()
 
@@ -367,6 +371,7 @@ def stopCombat():
         setEntryStates(NORMAL)
         combatButton.config(state=NORMAL, bg=colors.btnGreen)
         stopCombatButton.config(state=DISABLED, bg=colors.btnGrey)
+        manualAttack.place_forget()
 
 playerHP = 1000
 playerFrame = Frame()
@@ -419,11 +424,10 @@ bossHP.pack()
 playerFrame.grid(row=1,column=1,padx=20,pady=20)
 bossFrame.grid(row=1,column=2,padx=20,pady=20)
 
-manualAttackFrame = Frame(height=60) # used for padding space for manual attack sword
+manualAttackFrame = Frame(height=70) # used for padding space for manual attack sword
 manualAttackFrame.grid(row=3, column=0)
 sword = PhotoImage(file = ".\\Media\\Resources\\combatSword.png")
 manualAttack = Button(window, image=sword, command=click, relief=FLAT)
-manualAttack.place(x = random.randint(200,620), y = random.randint(380,410))
 
 
 btnFrame = Frame()
@@ -434,12 +438,15 @@ stopCombatButton = Button(btnFrame, text='Stop Combat', command=stopCombat, stat
 stopCombatButton.grid(row=1, column=0, pady=10)
 btnFrame.grid(row=1, column=0)
 
-buffsFrame = Frame()
-buffsFrame.grid(row=4, column=0, columnspan=2, sticky=W, padx=12)
+researchFrame = Frame()
+researchFrame.grid(row=4, column=0, columnspan=2, sticky=W, padx=12)
+buffsFrame = Frame(master=researchFrame)
+buffsFrame.grid(row=1, column=0, sticky=W)
+researchTitle = Label(master=researchFrame, text='RESEARCH', font=('Arial',10))
+researchTitle.grid(row=0)
 
-
-def toggle(x):
-    button = critButtons[x]
+def toggle(x, btnDict):
+    button = btnDict[x]
     if button['clicked']:
         button['btn'].config(bg=colors.btnGrey, activebackground=colors.btnGrey)
         button['clicked'] = False
@@ -454,8 +461,16 @@ for i in range(0,3):
         # Crit 1: 0.5, Crit 2: 0.5, Crit 3: 1
         critButtons[i]['value'] = 1
     critButtons[i]['img'] = PhotoImage(file = ".\\Media\\Resources\\crit{}.png".format(i+1))
-    critBtn = Button(buffsFrame, image=critButtons[i]['img'], command=lambda x=i: toggle(x), relief=FLAT, bg=colors.btnGrey)
-    critBtn.grid(row=0, column=i, padx=4)
+    critBtn = Button(buffsFrame, image=critButtons[i]['img'], command=lambda x=i, btnDict=critButtons: toggle(x, btnDict), relief=FLAT, bg=colors.btnGrey)
+    critBtn.grid(row=0, column=i, padx=4, pady=2)
     critButtons[i]['btn'] = critBtn
+
+ravButtons = {}
+for i in range(0,3):
+    ravButtons[i] = {'img': None, 'btn': None, 'clicked': False, 'value': i+1}
+    ravButtons[i]['img'] = PhotoImage(file = ".\\Media\\Resources\\rav{}.png".format(i+1))
+    ravBtn = Button(buffsFrame, image = ravButtons[i]['img'], command=lambda x=i, btnDict=ravButtons: toggle(x, btnDict), relief=FLAT, bg=colors.btnGrey)
+    ravBtn.grid(row=1, column=i, padx=4, pady=2)
+    ravButtons[i]['btn'] = ravBtn
 
 window.mainloop()
