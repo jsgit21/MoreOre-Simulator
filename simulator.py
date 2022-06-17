@@ -451,6 +451,7 @@ critButtons = {} # 0:{'img': <img>, 'btn': <btn-object>, 'clicked': <bool>, 'val
 for i in range(0,3):
     critButtons[i] = {'img':None, 'btn': None, 'clicked':False, 'value':0.5}
     if i == 2:
+        # Crit 1: 0.5, Crit 2: 0.5, Crit 3: 1
         critButtons[i]['value'] = 1
     critButtons[i]['img'] = PhotoImage(file = ".\\Media\\Resources\\crit{}.png".format(i+1))
     critBtn = Button(buffsFrame, image=critButtons[i]['img'], command=lambda x=i: toggle(x), relief=FLAT, bg=colors.btnGrey)
