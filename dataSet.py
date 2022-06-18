@@ -17,6 +17,7 @@ bossData = {
     'Bandit Boss':{'HP':2200000, 'ARM':3500, 'LUK':20000, 'ATK':600, 'DEX':1000, 'APS':6},
     'Cloud of Flies':{'HP':110000, 'ARM':300, 'LUK':50000, 'ATK':300, 'DEX':500, 'APS':4},
     'Desperate Thief':{'HP':500000, 'ARM':600, 'LUK':2000, 'ATK':700, 'DEX':500, 'APS':1.5},
+    'The Beast':{'HP':2300000000, 'ARM':25000, 'LUK':5000, 'ATK':4000, 'DEX':100, 'APS':1},
 }
 
 def getBossInfo(bossName):
